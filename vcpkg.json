@@ -1,0 +1,13 @@
+{
+    "name": "copier",
+    "version-string": "0.1.0",
+    "maintainers": "kernelai",
+    "license": "bsd-3-clause",
+    "dependencies": [
+        "gtest",
+        "gflags",
+        "glog",
+        "zstd",
+        "folly"
+    ]
+}
