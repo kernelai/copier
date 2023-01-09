@@ -15,6 +15,7 @@ include(CTest)
 enable_testing()
 
 add_executable(copier main.cpp)
+target_link_libraries(copier Folly::folly)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
