@@ -14,7 +14,7 @@ find_package(folly CONFIG REQUIRED)
 include(CTest)
 enable_testing()
 
-add_executable(copier main.cpp)
+add_executable(copier main.cpp fibers.cpp)
 target_link_libraries(copier Folly::folly)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
