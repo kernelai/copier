@@ -1,14 +1,24 @@
-#include <iostream>
+#include "fibers.h"
+
+#include <folly/executors/FiberIOExecutor.h>
+#include <folly/executors/IOThreadPoolExecutor.h>
 #include <folly/fibers/Baton.h>
 #include <folly/fibers/Fiber.h>
 #include <folly/fibers/FiberManager.h>
 #include <folly/fibers/FiberManagerMap.h>
 #include <folly/fibers/Promise.h>
 #include <folly/io/async/EventBase.h>
-#include "fibers.h"
+
+#include <iostream>
 
 void fibers() {
-  std::cout << "Hello, World!" << std::endl;
+  auto executer =
+      folly::FiberIOExecutor(std::make_shared<folly::IOThreadPoolExecutor>(
+          1, std::make_shared<folly::NamedThreadFactory>("fiber Thread")));
+  executer.add([]() { std::cout << "fiber, Hello, World!" << std::endl; });
+}
+
+void history() {
   folly::EventBase evb;
   auto& fiberManager = folly::fibers::getFiberManager(evb);
   folly::fibers::Baton baton;

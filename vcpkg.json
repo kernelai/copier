@@ -4,10 +4,12 @@
     "maintainers": "kernelai",
     "license": "bsd-3-clause",
     "dependencies": [
+        "liburing",
         "gtest",
         "gflags",
         "glog",
         "zstd",
-        "folly"
+        "folly",
+        "wangle"
     ]
 }
