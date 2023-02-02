@@ -1,3 +1,3 @@
 #pragma once
 
-void fibers();
+void RunFibers();
