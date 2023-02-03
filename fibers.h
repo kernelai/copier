@@ -1,3 +1,4 @@
 #pragma once
 
-void RunFibers();
+void RunFibersInExecutor();
+void RunfiberInManager();

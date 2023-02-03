@@ -27,5 +27,6 @@ void test() {
 }
 int main(int argc, char** argv) {
   folly::Init Init(&argc, &argv);
-  RunFibers();
+  // RunFibers();
+  RunfiberInManager();
 }

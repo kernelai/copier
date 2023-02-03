@@ -12,7 +12,7 @@
 
 #include <iostream>
 
-void RunFibers() {
+void RunFibersInExecutor() {
   auto executer =
       folly::FiberIOExecutor(std::make_shared<folly::IOThreadPoolExecutor>(
           1, std::make_shared<folly::NamedThreadFactory>("fiber Thread")));
@@ -33,21 +33,24 @@ void RunFibers() {
   });
 }
 
-void history() {
+void RunfiberInManager() {
   folly::EventBase evb;
   auto& fiberManager = folly::fibers::getFiberManager(evb);
-  folly::fibers::Baton baton;
+  folly::Promise<int> p;
+  auto f = p.getSemiFuture();
+  fiberManager.addTask([&]() mutable {
+    std::cout << "f1 waite for future, state: " << (f.valid() == true
+        ? "ture "
+        : "false") << std::endl;
+
+    auto const v = std::move(f).get();
+    std::cout << "f1 get feature value: " << v << std::endl;
+  });
   fiberManager.addTask([&]() {
-    std::cout << "Task 1: start" << std::endl;
-    baton.wait();
-    std::cout << "Task 1: after baton.wait()" << std::endl;
+    std::cout << "f2 set feature value" << std::endl;
+    p.setValue(42);
   });
 
-  fiberManager.addTask([&]() {
-    std::cout << "Task 2: start" << std::endl;
-    baton.post();
-    std::cout << "Task 2: after baton.post()" << std::endl;
-  });
-
-  evb.loop();
+  // evb.loop();
+  evb.loopForever();
 }
