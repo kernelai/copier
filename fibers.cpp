@@ -8,6 +8,7 @@
 #include <folly/fibers/FiberManagerMap.h>
 #include <folly/futures/Promise.h>
 // #include <folly/futures/Future.h>
+#include <folly/experimental/io/IoUringBackend.h>
 #include <folly/io/async/EventBase.h>
 
 #include <iostream>
@@ -20,9 +21,8 @@ void RunFibersInExecutor() {
   folly::Promise<int> p;
   auto f = p.getSemiFuture();
   executer.add([&]() mutable {
-    std::cout << "f1 waite for future, state: " << (f.valid() == true
-        ? "ture "
-        : "false") << std::endl;
+    std::cout << "f1 waite for future, state: "
+              << (f.valid() == true ? "ture " : "false") << std::endl;
 
     auto const v = std::move(f).get();
     std::cout << "f1 get feature value: " << v << std::endl;
@@ -34,14 +34,20 @@ void RunFibersInExecutor() {
 }
 
 void RunfiberInManager() {
-  folly::EventBase evb;
+  folly::PollIoBackend::Options options;
+  options.setCapacity(1024).setMaxSubmit(256);
+  auto factory = [options]() {
+    return std::make_unique<folly::IoUringBackend>(options);
+  };
+  folly::EventBase evb(
+      folly::EventBase::Options().setBackendFactory(std::move(factory)));
+
   auto& fiberManager = folly::fibers::getFiberManager(evb);
   folly::Promise<int> p;
   auto f = p.getSemiFuture();
   fiberManager.addTask([&]() mutable {
-    std::cout << "f1 waite for future, state: " << (f.valid() == true
-        ? "ture "
-        : "false") << std::endl;
+    std::cout << "f1 waite for future, state: "
+              << (f.valid() == true ? "ture " : "false") << std::endl;
 
     auto const v = std::move(f).get();
     std::cout << "f1 get feature value: " << v << std::endl;

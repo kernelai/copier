@@ -1,0 +1,24 @@
+From b3088db3d7fab780dcf1931c8f9ac9ea583db003 Mon Sep 17 00:00:00 2001
+From: liuzhen3 <liuzhen3@360.cn>
+Date: Tue, 7 Feb 2023 15:26:04 +0000
+Subject: [PATCH] feature: folly with liburing
+
+---
+ ports/folly/vcpkg.json | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/ports/folly/vcpkg.json b/ports/folly/vcpkg.json
+index 90718f39f..5c145da1b 100644
+--- a/ports/folly/vcpkg.json
++++ b/ports/folly/vcpkg.json
+@@ -25,6 +25,7 @@
+     "glog",
+     "libevent",
+     "openssl",
++    "liburing",
+     {
+       "name": "vcpkg-cmake",
+       "host": true
+-- 
+2.34.1
+

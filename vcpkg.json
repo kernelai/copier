@@ -9,7 +9,6 @@
         "gflags",
         "glog",
         "zstd",
-        "folly",
-        "wangle"
+        "folly"
     ]
 }
