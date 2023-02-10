@@ -96,31 +96,31 @@ folly::EventBase getEventBase() {
   return getEventBase(options);
 }
 
-
-
-
-
 void RunFiber() {
   auto tempFile = TempFileUtil::getTempFile(1024 * 1024);
-  // std::cout << "temp file path: " << tempFile.path() << std::endl;
-  int fd = ::open(tempFile.path().c_str(), O_DIRECT | O_RDWR);
-  // int fd = ::open(tempFile.path().c_str(), O_RDWR);
-  if (fd < 0) {
-    std::cout << "open file failed with O_DIRECT: " << folly::errnoStr(errno)
-              << std::endl;
-    return;
-  }
 
   auto evb = getEventBase();
-
   auto& fiberManager = folly::fibers::getFiberManager(evb);
   fiberManager.addTask([&]() {
     constexpr size_t kNumEntries = 2;
     constexpr size_t kBufSize = 4096;
     auto backend = dynamic_cast<folly::IoUringBackend*>(evb.getBackend());
-    auto buf = ManagedBuffer(allocateAligned(kBufSize));
+
+    folly::Promise<int> p;
+    auto f1 = p.getFuture();
+    backend->queueOpenat(
+        0, tempFile.path().c_str(), O_DIRECT | O_RDWR, 0, [&](int res) {
+          if (res < 0) {
+            p.setException(std::runtime_error("IO Uring openat error:" +
+                                              folly::errnoStr(-res)));
+            return;
+          }
+          p.setValue(res);
+        });
+    auto fd = std::move(f1).get();
     folly::Promise<int> promise;
     auto f = promise.getFuture();
+    auto buf = ManagedBuffer(allocateAligned(kBufSize));
     backend->queueRead(fd, buf.get(), kBufSize, 0, [&](int res) {
       if (res < 0) {
         promise.setException(std::runtime_error("IO Uring read error"));
