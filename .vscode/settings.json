@@ -18,6 +18,10 @@
         "mutex": "cpp",
         "shared_mutex": "cpp",
         "algorithm": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "array": "cpp",
+        "tuple": "cpp",
+        "utility": "cpp",
+        "variant": "cpp"
     }
 }
