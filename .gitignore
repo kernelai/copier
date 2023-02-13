@@ -33,6 +33,7 @@
 
 # Build
 build
+buildtrees
 
 # IDE
 .vscode/settings.json
