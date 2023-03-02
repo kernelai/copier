@@ -10,6 +10,7 @@ set(INSTALL_INCLUDEDIR ${STAGED_INSTALL_PREFIX}/include)
 set(INSTALL_LIBDIR ${STAGED_INSTALL_PREFIX}/lib)
 set(INSTALL_LIBDIR_64 ${STAGED_INSTALL_PREFIX}/lib64)
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${STAGED_INSTALL_PREFIX})
+set(DEPS_BUILD_ALWAYS 0)
 link_directories(${INSTALL_LIBDIR} ${INSTALL_LIBDIR_64})
 message(STATUS "${PROJECT_NAME} staged install: ${STAGED_INSTALL_PREFIX}")
 include(ExternalProject)
@@ -32,7 +33,7 @@ ExternalProject_Add(gtest
   CMAKE_ARGS
   -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
 )
 set(GTEST_INCLUDE_DIR ${INSTALL_INCLUDEDIR})
 set(GTEST_LIBRARY ${INSTALL_LIBDIR}/libgtest.a)
@@ -53,7 +54,7 @@ ExternalProject_Add(gflags
   LOG_INSTALL
   1
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
   CMAKE_ARGS
   -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
   -DGFLAGS_NAMESPACE=gflags
@@ -111,7 +112,7 @@ ExternalProject_Add(glog
   LOG_INSTALL
   1
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
   CMAKE_ARGS
   -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
   -DWITH_GFLAGS=ON
@@ -174,7 +175,8 @@ ExternalProject_Add(zstd
   -DZSTD_BUILD_STATIC=ON
   -DZSTD_BUILD_SHARED=OFF
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
+
 )
 set(ZSTD_LIBRARIE ${INSTALL_LIBDIR}/libzstd.a)
 set(ZSTD_INCLUDE_DIR ${INSTALL_INCLUDEDIR})
@@ -203,7 +205,7 @@ ExternalProject_Add(lz4
   -DBUILD_STATIC_LIBS=ON
   -DBUILD_SHARED_LIBS=OFF
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
 )
 set(LZ4_LIBRARIE ${INSTALL_LIBDIR}/liblz4.a)
 set(LZ4_INCLUDE_DIR ${INSTALL_INCLUDEDIR})
@@ -227,7 +229,7 @@ ExternalProject_Add(zlib
   CMAKE_ARGS
   -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
 )
 set(ZLIB_LIBRARIE ${INSTALL_LIBDIR}/libz.a)
 set(ZLIB_INCLUDE_DIR ${INSTALL_INCLUDEDIR})
@@ -279,7 +281,7 @@ ExternalProject_Add(jemalloc
   BUILD_COMMAND
   make -j8
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
   INSTALL_COMMAND
   make install
 )
@@ -338,7 +340,7 @@ ExternalProject_Add(boost
   --with-type_erasure
   --with-wave
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
   INSTALL_COMMAND
   <SOURCE_DIR>/b2 install
 )
@@ -367,7 +369,7 @@ ExternalProject_Add(libevent
   -DEVENT__DISABLE_REGRESS=ON
   -DEVENT__BUILD_SHARED_LIBRARIES=ON
   BUILD_ALWAYS
-  1
+  ${DEPS_BUILD_ALWAYS}
 )
 
 ExternalProject_Add(libsodium
@@ -437,6 +439,8 @@ ExternalProject_Add(fmt
   -DFMT_TEST=OFF
   -DFMT_DOC=OFF
 )
+set(FMT_INCLUDE_DIR ${STAGED_INSTALL_PREFIX}/include)
+set(FMT_LIBRARIES ${STAGED_INSTALL_PREFIX}/lib/libfmt.a)
 
 ExternalProject_Add(liburing
   DEPENDS
@@ -463,6 +467,8 @@ ExternalProject_Add(liburing
   INSTALL_COMMAND
   make install
 )
+set(LIBURING_INCLUDE_DIR ${STAGED_INSTALL_PREFIX}/include)
+set(LIBURING_LIBRARIES ${STAGED_INSTALL_PREFIX}/lib/liburing.a)
 
 ExternalProject_Add(folly
   DEPENDS
@@ -496,14 +502,33 @@ ExternalProject_Add(folly
   -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
 )
 
+set(FOLLY_INCLUDE_DIR ${STAGED_INSTALL_PREFIX}/include)
+set(FOLLY_LIBRARIES ${STAGED_INSTALL_PREFIX}/lib/libfolly.a)
+
 include(CTest)
 enable_testing()
 
-add_executable(copier main.cpp)
+add_executable(copier main.cpp fibers.cpp)
 
 add_dependencies(copier glog gflags gtest boost libevent libsodium double-conversion fmt lz4 snappy zstd liburing folly)
-target_include_directories(copier PRIVATE ${INSTALL_INCLUDEDIR})
-target_link_libraries(copier libglog.a libgflags.a libunwind.a)
+target_include_directories(copier PUBLIC ${INSTALL_INCLUDEDIR})
+target_link_libraries(copier
+libglog.a
+libgflags.a
+libfolly.a
+liburing.a
+libfmt.a
+libevent.a
+libdouble-conversion.a
+libboost_context.a
+libboost_filesystem.a
+libboost_program_options.a
+libboost_regex.a
+libboost_system.a
+libboost_thread.a
+libsodium.a
+libunwind.a
+) 
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
