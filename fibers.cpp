@@ -13,6 +13,7 @@
 #include <folly/fibers/FiberManagerMap.h>
 #include <folly/futures/Promise.h>
 #include <folly/io/async/EventBase.h>
+#include <folly/logging/xlog.h>
 
 #include <iostream>
 #include <random>
@@ -131,9 +132,9 @@ void RunFiber() {
 
     try {
       auto res = std::move(f).get();
-      std::cout << "read res: " << res << std::endl;
+      XLOG(INFO) << "read res: " << res << std::endl;
     } catch (const std::exception& e) {
-      std::cout << "read error: " << e.what() << std::endl;
+      XLOG(INFO) << "read error: " << e.what() << std::endl;
     }
   });
 
