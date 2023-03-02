@@ -13,6 +13,5 @@ FOLLY_INIT_LOGGING_CONFIG(
 
 int main(int argc, char** argv) {
   folly::Init Init(&argc, &argv);
-  XLOG(INFO) << "Hello World!";
   RunFiber();
 }

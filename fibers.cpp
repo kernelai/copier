@@ -106,9 +106,8 @@ void RunFiber() {
     constexpr size_t kNumEntries = 2;
     constexpr size_t kBufSize = 4096;
     auto backend = dynamic_cast<folly::IoUringBackend*>(evb.getBackend());
-
+    // open file
     folly::Promise<int> p;
-    auto f1 = p.getFuture();
     backend->queueOpenat(
         0, tempFile.path().c_str(), O_DIRECT | O_RDWR, 0, [&](int res) {
           if (res < 0) {
@@ -118,23 +117,47 @@ void RunFiber() {
           }
           p.setValue(res);
         });
-    auto fd = std::move(f1).get();
-    folly::Promise<int> promise;
-    auto f = promise.getFuture();
-    auto buf = ManagedBuffer(allocateAligned(kBufSize));
-    backend->queueRead(fd, buf.get(), kBufSize, 0, [&](int res) {
-      if (res < 0) {
-        promise.setException(std::runtime_error("IO Uring read error"));
-        return;
-      }
-      promise.setValue(res);
-    });
-
-    try {
-      auto res = std::move(f).get();
-      XLOG(INFO) << "read res: " << res << std::endl;
-    } catch (const std::exception& e) {
-      XLOG(INFO) << "read error: " << e.what() << std::endl;
+    auto fdFuture = p.getFuture();
+    auto fd = std::move(fdFuture).get();
+    // stat file
+    folly::Promise<int> statxPromise;
+    auto statxFuture = statxPromise.getFuture();
+    auto statxBuf = std::make_unique<struct statx>();
+    backend->queueStatx(
+        fd, "", AT_EMPTY_PATH, STATX_BASIC_STATS, statxBuf.get(), [&](int res) {
+          if (res < 0) {
+            XLOG(INFO) << "IO Uring statx error:" << folly::errnoStr(-res);
+            p.setException(std::runtime_error("IO Uring statx error:" +
+                                              folly::errnoStr(-res)));
+            return;
+          }
+          statxPromise.setValue(res);
+        });
+    std::move(statxFuture).get();
+    size_t size;
+    if (S_ISREG(statxBuf->stx_mode) == 0) {
+      XLOGF(INFO, "{} is not regular file.", tempFile.path().string());
+      return;
+    }
+    size = statxBuf->stx_size;
+    XLOGF(INFO, "{} is regular file, file size: {}", tempFile.path().string(),
+          size);
+    // read file
+    auto remaining = size;
+    while (remaining > 0) {
+      folly::Promise<int> promise;
+      auto f = promise.getFuture();
+      auto buf = ManagedBuffer(allocateAligned(kBufSize));
+      backend->queueRead(fd, buf.get(), kBufSize, 0, [&](int res) {
+        if (res < 0) {
+          promise.setException(std::runtime_error("IO Uring read error"));
+          return;
+        }
+        promise.setValue(res);
+      });
+      auto bytes = std::move(f).get();
+      remaining -= bytes;
+      XLOGF(INFO, "read bytes: {}, remaining bytes: {}", bytes, remaining);
     }
   });
 
