@@ -1,7 +1,7 @@
-#include <folly/init/Init.h>
-#include <folly/logging/xlog.h>
-#include <folly/logging/Init.h>
 #include <glog/logging.h>
+#include <folly/init/Init.h>
+#include <folly/logging/Init.h>
+#include <folly/logging/xlog.h>
 
 #include <iostream>
 

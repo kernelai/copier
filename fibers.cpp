@@ -18,7 +18,7 @@
 #include <iostream>
 #include <random>
 
-constexpr size_t kODirectAlign = 4096;  // align reads to 4096 B (for O_DIRECT)
+constexpr size_t kODirectAlign = 4096; // align reads to 4096 B (for O_DIRECT)
 
 using ManagedBuffer = std::unique_ptr<char, void (*)(void*)>;
 
@@ -98,7 +98,7 @@ folly::EventBase getEventBase() {
 }
 
 void RunFiber() {
-  auto tempFile = TempFileUtil::getTempFile(1024 * 1024);
+  auto tempFile = TempFileUtil::getTempFile(1024 * 1024 * 1024);
 
   auto evb = getEventBase();
   auto& fiberManager = folly::fibers::getFiberManager(evb);
@@ -111,8 +111,8 @@ void RunFiber() {
     backend->queueOpenat(
         0, tempFile.path().c_str(), O_DIRECT | O_RDWR, 0, [&](int res) {
           if (res < 0) {
-            p.setException(std::runtime_error("IO Uring openat error:" +
-                                              folly::errnoStr(-res)));
+            p.setException(std::runtime_error(
+                "IO Uring openat error:" + folly::errnoStr(-res)));
             return;
           }
           p.setValue(res);
@@ -127,8 +127,8 @@ void RunFiber() {
         fd, "", AT_EMPTY_PATH, STATX_BASIC_STATS, statxBuf.get(), [&](int res) {
           if (res < 0) {
             XLOG(INFO) << "IO Uring statx error:" << folly::errnoStr(-res);
-            p.setException(std::runtime_error("IO Uring statx error:" +
-                                              folly::errnoStr(-res)));
+            p.setException(std::runtime_error(
+                "IO Uring statx error:" + folly::errnoStr(-res)));
             return;
           }
           statxPromise.setValue(res);
@@ -140,8 +140,11 @@ void RunFiber() {
       return;
     }
     size = statxBuf->stx_size;
-    XLOGF(INFO, "{} is regular file, file size: {}", tempFile.path().string(),
-          size);
+    XLOGF(
+        INFO,
+        "{} is regular file, file size: {}",
+        tempFile.path().string(),
+        size);
     // read file
     auto remaining = size;
     while (remaining > 0) {
