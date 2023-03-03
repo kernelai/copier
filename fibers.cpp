@@ -98,7 +98,7 @@ folly::EventBase getEventBase() {
 }
 
 void RunFiber() {
-  auto tempFile = TempFileUtil::getTempFile(1024 * 1024 * 1024);
+  auto tempFile = TempFileUtil::getTempFile(1024 * 1024);
 
   auto evb = getEventBase();
   auto& fiberManager = folly::fibers::getFiberManager(evb);
@@ -113,7 +113,6 @@ void RunFiber() {
           if (res < 0) {
             p.setException(std::runtime_error(
                 "IO Uring openat error:" + folly::errnoStr(-res)));
-            return;
           }
           p.setValue(res);
         });
@@ -121,7 +120,6 @@ void RunFiber() {
     auto fd = std::move(fdFuture).get();
     // stat file
     folly::Promise<int> statxPromise;
-    auto statxFuture = statxPromise.getFuture();
     auto statxBuf = std::make_unique<struct statx>();
     backend->queueStatx(
         fd, "", AT_EMPTY_PATH, STATX_BASIC_STATS, statxBuf.get(), [&](int res) {
@@ -133,7 +131,7 @@ void RunFiber() {
           }
           statxPromise.setValue(res);
         });
-    std::move(statxFuture).get();
+    statxPromise.getFuture().get();
     size_t size;
     if (S_ISREG(statxBuf->stx_mode) == 0) {
       XLOGF(INFO, "{} is not regular file.", tempFile.path().string());
