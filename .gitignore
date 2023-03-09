@@ -44,6 +44,7 @@ deps
 !.vscode/*.code-snippets
 .idea
 .vscode
+.cache
 
 # Develop container
 .devcontainer/

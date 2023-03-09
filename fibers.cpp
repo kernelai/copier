@@ -118,6 +118,7 @@ void RunFiber() {
         });
     auto fdFuture = p.getFuture();
     auto fd = std::move(fdFuture).get();
+    XLOGF(INFO, "IO Uring openat {} success, fd: {}", tempFile.path().string() , fd);
     // stat file
     folly::Promise<int> statxPromise;
     auto statxBuf = std::make_unique<struct statx>();
@@ -160,6 +161,17 @@ void RunFiber() {
       remaining -= bytes;
       XLOGF(INFO, "read bytes: {}, remaining bytes: {}", bytes, remaining);
     }
+   // close file
+    folly::Promise<int> closePromise;
+    backend->queueClose(fd, [&](int res) {
+      if (res < 0) {
+        closePromise.setException(std::runtime_error("IO Uring close error"));
+        return;
+      }
+      closePromise.setValue(res);
+    });
+    closePromise.getFuture().get(); 
+    XLOGF(INFO, "close file: {}", tempFile.path().string());
   });
 
   evb.loopForever();

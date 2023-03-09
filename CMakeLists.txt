@@ -35,8 +35,6 @@ ExternalProject_Add(gtest
   BUILD_ALWAYS
   ${DEPS_BUILD_ALWAYS}
 )
-set(GTEST_INCLUDE_DIR ${INSTALL_INCLUDEDIR})
-set(GTEST_LIBRARY ${INSTALL_LIBDIR}/libgtest.a)
 
 ExternalProject_Add(gflags
   URL
@@ -61,8 +59,6 @@ ExternalProject_Add(gflags
   -DBUILD_STATIC_LIBS=ON
   -DBUILD_SHARED_LIBS=OFF
 )
-set(GFLAGS_LIBRARIE ${INSTALL_LIBDIR}/libgflags.a)
-set(GFLAGS_INCLUDE_DIR ${INSTALL_INCLUDEDIR})
 
 ExternalProject_Add(unwind
   DEPENDS
