@@ -12,11 +12,17 @@
 #include <folly/fibers/FiberManager.h>
 #include <folly/fibers/FiberManagerMap.h>
 #include <folly/futures/Promise.h>
+#include <folly/hash/Checksum.h>
 #include <folly/io/async/EventBase.h>
 #include <folly/logging/xlog.h>
 
+#include <cstdint>
 #include <iostream>
 #include <random>
+
+uint32_t checkSum(const uint8_t* data, size_t size, uint32_t start) {
+  return folly::crc32(data, size, start);
+}
 
 constexpr size_t kODirectAlign = 4096; // align reads to 4096 B (for O_DIRECT)
 
@@ -118,7 +124,11 @@ void RunFiber() {
         });
     auto fdFuture = p.getFuture();
     auto fd = std::move(fdFuture).get();
-    XLOGF(INFO, "IO Uring openat {} success, fd: {}", tempFile.path().string() , fd);
+    XLOGF(
+        INFO,
+        "IO Uring openat {} success, fd: {}",
+        tempFile.path().string(),
+        fd);
     // stat file
     folly::Promise<int> statxPromise;
     auto statxBuf = std::make_unique<struct statx>();
@@ -145,6 +155,7 @@ void RunFiber() {
         tempFile.path().string(),
         size);
     // read file
+    uint32_t checkSum = 0;
     auto remaining = size;
     while (remaining > 0) {
       folly::Promise<int> promise;
@@ -158,10 +169,11 @@ void RunFiber() {
         promise.setValue(res);
       });
       auto bytes = std::move(f).get();
+      // checkSum = checkSum((uint8_t*)buf.get(), bytes, checkSum);
       remaining -= bytes;
       XLOGF(INFO, "read bytes: {}, remaining bytes: {}", bytes, remaining);
     }
-   // close file
+    // close file
     folly::Promise<int> closePromise;
     backend->queueClose(fd, [&](int res) {
       if (res < 0) {
@@ -170,7 +182,7 @@ void RunFiber() {
       }
       closePromise.setValue(res);
     });
-    closePromise.getFuture().get(); 
+    closePromise.getFuture().get();
     XLOGF(INFO, "close file: {}", tempFile.path().string());
   });
 
